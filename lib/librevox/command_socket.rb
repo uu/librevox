@@ -38,8 +38,7 @@ module Librevox
       end
 
       length = response.headers[:content_length].to_i
-      response.content = @socket.read(length) if length > 0
-
+      response.instance_variable_set(:@content, length > 0 ? @socket.read(length) : "")
       response
     end
 
