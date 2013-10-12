@@ -51,5 +51,9 @@ module Librevox
 
       headers
     end
+
+    def close
+      @socket.close
+    end
   end
 end
