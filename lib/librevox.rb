@@ -6,8 +6,6 @@ require 'librevox/listener/outbound'
 require 'librevox/command_socket'
 
 module Librevox
-  VERSION = "0.5"
-
   def self.options
     @options ||= {
       :log_file   => STDOUT,
@@ -23,6 +21,10 @@ module Librevox
     logger = Logger.new(options[:log_file])
     logger.level = options[:log_level]
     logger
+  end
+
+  def self.reopen_log
+    @logger = logger!
   end
 
   # When called without a block, it will start the listener that is passed as
@@ -42,19 +44,21 @@ module Librevox
     EM.run do
       trap("TERM") {stop}
       trap("INT") {stop}
+      trap("HUP") {reopen_log}
 
       block_given? ? instance_eval(&block) : run(klass, args)
     end
   end
 
   def self.run klass, args={}
-    host = args.delete(:host) || "localhost"
-    port = args.delete(:port)
+    args[:host] ||= "localhost"
 
     if klass.ancestors.include? Librevox::Listener::Inbound
-      EM.connect host, port || "8021", klass, args
+      args[:port] ||= 8021
+      EM.connect args[:host], args[:port], klass, args
     elsif klass.ancestors.include? Librevox::Listener::Outbound
-      EM.start_server host, port || "8084", klass, args
+      args[:port] ||= 8084
+      EM.start_server host, args[:port], klass, args
     end
   end
 
